@@ -6,7 +6,7 @@ from flask import Flask, Response  # Add Flask for web server
 app = Flask(__name__)
 
 # Replace with your new personal access token
-token = "YOUR_NEW_TOKEN_HERE"  # Update this with your actual token
+token = "CALENDLY_TOKEN"  # Update this with your actual token
 headers = {"Authorization": f"Bearer {token}"}
 
 # Define SGT timezone
