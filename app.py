@@ -2,11 +2,12 @@ import requests
 from datetime import datetime, timedelta
 from pytz import timezone
 from flask import Flask, Response  # Add Flask for web server
+import os
 
 app = Flask(__name__)
 
 # Replace with your new personal access token
-token = "CALENDLY_TOKEN"  # Update this with your actual token
+token = os.environ.get("CALENDLY_TOKEN")  # Get token from environment
 headers = {"Authorization": f"Bearer {token}"}
 
 # Define SGT timezone
