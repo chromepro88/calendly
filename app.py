@@ -13,7 +13,6 @@ headers = {"Authorization": f"Bearer {token}"}
 # Define SGT timezone
 sgt = timezone('Asia/Singapore')
 
-# Step 1: Get user UUID and verify token
 def get_user_uuid():
     url = "https://api.calendly.com/users/me"
     response = requests.get(url, headers=headers)
@@ -21,7 +20,6 @@ def get_user_uuid():
         return response.json()["resource"]["uri"]
     return None
 
-# Step 2: Get the correct event type URI for "propupsg/new"
 def get_event_type_uri(token, slug, user_uri):
     url = "https://api.calendly.com/event_types"
     params = {"user": user_uri}
@@ -33,7 +31,6 @@ def get_event_type_uri(token, slug, user_uri):
             return event["uri"]
     return None
 
-# Step 3: Fetch and format available times
 def get_available_times(event_type_uri, start_time, end_time):
     url = "https://api.calendly.com/event_type_available_times"
     params = {
@@ -42,18 +39,22 @@ def get_available_times(event_type_uri, start_time, end_time):
         "end_time": end_time
     }
     response = requests.get(url, headers=headers, params=params)
+    debug_info = (f"Status: {response.status_code}\n"
+                  f"Request Range: {start_time} to {end_time}\n"
+                  f"Response: {response.json()}")
+    print(debug_info)  # For local debugging
     if "collection" not in response.json():
-        return []
+        return [], debug_info
+    # Format as "dayname time" (e.g., "tuesday 10am")
     available_times = [
         datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%SZ")
         .replace(tzinfo=timezone('UTC'))
         .astimezone(sgt)
-        .strftime("%B %d, %Y at %I:%M %p SGT")
+        .strftime("%A %I%M%p").lower().replace(":00", "")  # e.g., "Tuesday 10AM" -> "tuesday 10am"
         for slot in response.json()["collection"] if slot["status"] == "available"
     ]
-    return available_times
+    return available_times, debug_info
 
-# Web endpoint
 @app.route('/get-dates')
 def get_dates():
     user_uri = get_user_uuid()
@@ -73,13 +74,13 @@ def get_dates():
     start_time = start_sgt.astimezone(timezone('UTC')).isoformat().replace("+00:00", "Z")
     end_time = end_sgt.astimezone(timezone('UTC')).isoformat().replace("+00:00", "Z")
     
-    available_times = get_available_times(event_type_uri, start_time, end_time)
+    available_times, debug_info = get_available_times(event_type_uri, start_time, end_time)
     if available_times:
         text_output = "\n".join(available_times)
         return Response(text_output, mimetype='text/plain')
     else:
-        return Response("No available times found in the specified range.", mimetype='text/plain')
+        return Response(f"No available times found in the specified range.\n\nDebug Info:\n{debug_info}", 
+                        mimetype='text/plain')
 
-# Run the app
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
