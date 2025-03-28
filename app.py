@@ -67,7 +67,7 @@ def get_dates():
     # Set future date range in SGT (7 days starting tomorrow)
     now_sgt = datetime.now(sgt)
     start_sgt = (now_sgt + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    end_sgt = (now_sgt + timedelta(days=10)).replace(hour=23, minute=59, second=59, microsecond=0)
+    end_sgt = (now_sgt + timedelta(days=7)).replace(hour=23, minute=59, second=59, microsecond=0)
     
     # Convert to UTC for API
     start_time = start_sgt.astimezone(timezone('UTC')).isoformat().replace("+00:00", "Z")
