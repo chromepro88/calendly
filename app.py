@@ -45,14 +45,26 @@ def get_available_times(event_type_uri, start_time, end_time):
     print(debug_info)  # For local debugging
     if "collection" not in response.json():
         return [], debug_info
-    # Format as "dayname time" (e.g., "tuesday 10am")
-    available_times = [
-        datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%SZ")
-        .replace(tzinfo=timezone('UTC'))
-        .astimezone(sgt)
-        .strftime("%A %I%M%p").lower().replace(":00", "")  # e.g., "Tuesday 10AM" -> "tuesday 10am"
-        for slot in response.json()["collection"] if slot["status"] == "available"
-    ]
+    
+    # Format times: "tuesday 10am" or "tuesday 430pm"
+    available_times = []
+    for slot in response.json()["collection"]:
+        if slot["status"] != "available":
+            continue
+        dt = (datetime.strptime(slot["start_time"], "%Y-%m-%dT%H:%M:%SZ")
+              .replace(tzinfo=timezone('UTC'))
+              .astimezone(sgt))
+        day = dt.strftime("%A").lower()  # e.g., "tuesday"
+        hour = dt.strftime("%I").lstrip("0")  # e.g., "10" or "4"
+        minutes = dt.strftime("%M")  # e.g., "00" or "30"
+        period = dt.strftime("%p").lower()  # e.g., "am" or "pm"
+        if minutes == "00":
+            time_str = f"{day} {hour}{period}"  # e.g., "tuesday 10am"
+        else:
+            minutes = minutes.lstrip("0")  # e.g., "30" -> "30", "00" -> ""
+            time_str = f"{day} {hour}{minutes}{period}"  # e.g., "tuesday 430pm"
+        available_times.append(time_str)
+    
     return available_times, debug_info
 
 @app.route('/get-dates')
